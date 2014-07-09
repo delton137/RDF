@@ -1,0 +1,74 @@
+'out_spcf_1_1_300_64beads_langevin_images_coord.xyz'        !input file name   
+'xyz'				!File type (.xyz or .xtc)
+''         			!File containing the TTM3F total dipoles for each molecule
+'spcf_1_1_300_64_langevin'     		   !label for output file(s) 
+15.64605 	 	        !length (size of box in Angstroms)
+1000			       !Number of divisions
+generic			       !model (tip4p, tip4p2005,tip4p2005f,spce,ttm3(req. extra file), generic)
+-1       		       !for generic model: charge on the oxygen (include +/-)	
+.5 			       !for generic model: charge on the hydrogen 
+17000			       !number of steps to use
+.t.			       !use all steps? (counts # of steps in file and uses all, only works with xyz)
+.f.			       !Calc dip-dip corr. function? (RDF weighted by dip-dip) 
+.f.		               !Output the POS and NEG components of dip-dip corr function
+.f.		               !print out <cos(theta)>? (previous must be true as well)  
+.f.                            !Calc G_K(r)? (including G_Ke and G_Ka)
+.f.			       !Calc G_K(r) by integrating dip-dip?
+30			       !use the last __ percent of the timesteps to get RMS error in gKr
+.f.			       !Calc O-O RDF?
+.t.			       !Calc O-H RDF?
+.t.			       !Calc H-H RDF?
+.t.			       !use cubic PBCs when calculating corr & gk(r)?
+512			       !Number of atoms (needed when using .xtc)
+.t. 			       !calculate ACF? 
+
+
+out_PIMD_32_coord.xyz
+
+
+out_PIMD_16_10ps_SCF_coord.xyz
+
+'/home/dan/Dropbox/RESEARCH/TTM3F_PIMD/out_PIMD_SPCf_4__coord.xyz '        !input file name   
+'xyz'				!File type (.xyz or .xtc)
+''         			!File containing the TTM3F total dipoles for each molecule
+'SPCf' 	        !label for output file(s) 
+
+
+
+
+
+
+> 0.88  16.32715
+> 1.00  15.64605
+> 1.05  15.39365
+> 1.10  15.15678
+> 1.15  14.933857
+> 1.20  14.72349
+
+
+782  = same number of bins as expt
+
+'data/out_TTM3F_115_300_2_coord.xyz'    !input file name   
+'data/out_TTM3F_115_300_2_dip.dat'      !File containing the TTM3F total dipoles for each molecule
+'RDF_TTM3F_115_300'		       !OutputFileHeader 
+
+'out_128_TTM3F_088_300_coord.xyz'  !input file name   
+'out_128_TTM3F_088_300_dip.dat'     !File containing the TTM3F total dipoles for each molecule
+16.32715		            !length (size of box in Angstroms)
+
+'out_128_TTM3F_100_300_coord.xyz'  !input file name   
+'out_128_TTM3F_100_300_dip.dat'     !File containing the TTM3F total dipoles for each molecule
+15.647			            !length (size of box in Angstroms)
+
+'out_128_TTM3F_120_300_coord.xyz'  !input file name   
+'out_128_TTM3F_120_300_dip.dat'     !File containing the TTM3F total dipoles for each molecule
+14.72349		            !length (size of box in Angstroms)
+
+
+
+
+'out_SPCF_1_298_coord.xyz'  !input file name 
+''                          !File containing the TTM3F total dipoles for each molecule  
+24.833812		    !length (size of box in Angstroms)
+
+
