@@ -34,11 +34,11 @@ contains
        do ja=ia+1,Nmol             ! to every other molecule
           distance=0.0d0            
           do ix=1,3
-             if(abs(xa(ix,ia)-xa(ix,ja)) >= halflength) then
+             if(abs(xa(ix,ia)-xa(ix,ja)) >= minval(halflength)) then
                 if(xa(ix,ia)-xa(ix,ja) > 0) then        
-                   tmp=xa(ix,ja)+halflength*2.0d0       
+                   tmp=xa(ix,ja)+minval(halflength)*2.0d0       
                 else                                    
-                   tmp=xa(ix,ja)-halflength*2.0d0       
+                   tmp=xa(ix,ja)-minval(halflength)*2.0d0       
                 end if
                 distance=distance+(xa(ix,ia)-tmp)**2  
              else                                       
@@ -48,7 +48,7 @@ contains
           enddo
           distance=sqrt(distance)                      
  ! ACTUALIZE HISTOGRAM
-          if(distance .lt. halflength) then
+          if(distance .lt. minval(halflength)) then
              call updatehist(distance,histliquid)
           endif
 
@@ -90,11 +90,11 @@ contains
        do ja=1,2*Nmol 
           distance=0.0d0
           do ix=1,3
-             if(abs(Oxy(ix,ia)-Hydro(ix,ja)) >= halflength) then 
+             if(abs(Oxy(ix,ia)-Hydro(ix,ja)) >= minval(halflength)) then 
                 if(Oxy(ix,ia)-Hydro(ix,ja) > 0) then  
-                   tmp=Hydro(ix,ja)+halflength*2.0d0  
+                   tmp=Hydro(ix,ja)+minval(halflength)*2.0d0  
                 else                                  
-                   tmp=Hydro(ix,ja)-halflength*2.0d0       
+                   tmp=Hydro(ix,ja)-minval(halflength)*2.0d0       
                 end if
                 distance=distance+(Oxy(ix,ia)-tmp)**2 
              else                                       
@@ -105,7 +105,7 @@ contains
           distance=sqrt(distance)                     
 
  ! ACTUALIZE HISTOGRAM
-          if(distance .lt. halflength) then
+          if(distance .lt. minval(halflength)) then
              call updatehist(distance,histliquid)     
           endif
        enddo
@@ -197,7 +197,7 @@ subroutine RDF_OO_dip(Nmol, xao, xah, histPOS, histNEG, histNumMolsPOS, histNumM
     cos_fac = dip_fac/(  sqrt(dot_product(d1,d1))*sqrt(dot_product(d2,d2))  )
 
  !--------------- Put stuff in histogram bins  ----------------------------------
- ! if(distance <= halflength) then
+ ! if(distance <= minval(halflength)) then
                 count=int(distance/delta)
 		!lever=mod(distance,delta)/delta
 		if (dip_fac .gt. 0) then
@@ -229,7 +229,6 @@ end subroutine RDF_OO_dip
     real,dimension(3,Nmol),intent(in) :: xao, TTM3Fdips
     real,dimension(3,Nmol*2),intent(in) :: xah
     real,dimension(Ndiv) :: gKr, gka, gke 
-    real,dimension(Ndiv) :: tgke, tgka
     ! INTERNAL VARS
     real :: distance
     integer :: ia, ja, ix, i, j, Ntot
@@ -305,17 +304,7 @@ do ia=1,Nmol-1
 
 	avgdip2 = avgdip2/Nmol
 
-	do i = 1, Ndiv
-		totgka = 0 
-		totgke = 0
-		do j = 1,i 
-			totgka = totgka + tgka(j)
-			totgke = totgke + tgke(j) 
-		enddo
-		gKr(i) = gKr(i) + (totgka+totgke)/avgdip2 
-		gka(i) = gka(i) + totgka/avgdip2
-		gke(i) = gke(i) + totgke/avgdip2
-	enddo
+
 enddo
 
 end subroutine GKRcalc

@@ -8,11 +8,14 @@ all: RDF_master.x clean
 debug: FFLAGS += -traceback -debug
 debug: RDF_master.x clean
 
-RDF_master.x: global_vars.o ACF.o m_RDF.o m_timer.o RDF_master.o
-	$(COMP) $(FFLAGS) global_vars.o ACF.o RDF_master.o m_RDF.o m_timer.o libxdrf.a -o RDF_master.x
+RDF_master.x: global_vars.o ACF.o RDF2D.o m_RDF.o m_timer.o RDF_master.o
+	$(COMP) $(FFLAGS) global_vars.o ACF.o RDF2D.o RDF_master.o m_RDF.o m_timer.o libxdrf.a -o RDF_master.x
 
 global_vars.o:
 	$(COMP) $(FFLAGS) -c global_vars.f90
+
+RDF2D.o:
+	$(COMP) $(FFLAGS) -c RDF2D.f90
 
 ACF.o:
 	$(COMP) $(FFLAGS) -c ACF.f90

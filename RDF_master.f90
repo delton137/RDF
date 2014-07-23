@@ -12,6 +12,7 @@ Program RDF_Master
   use m_RDF    
   use m_timer  
   use ACF
+  use RDF2D
 Implicit None
 
 !------------------------ declare all the variables! -----------------------------
@@ -25,10 +26,8 @@ real :: density, vol, histgas, junk, totdip, N, errpercent, sum_
 real(8) ::  seconds
 integer, parameter :: Lun1 = 21, Lun3 = 23, LunTTM3F = 24 
 integer :: Nmol_HH, npts
-integer :: i,j, ierror, nsteps, istep, ia, ix, Ntot, errpts
-logical :: first,DIPDIPFLAG,OOFLAG,OHFLAG,HHFLAG,COSFLAG,GKFLAG,GK2FLAG,ALLFLAG, ACFFLAG
-real :: totgka, totgke , avgdip2
-real,dimension(:),allocatable :: tgke, tgka
+integer :: i,j, ierror, istep, ia, ix, Ntot, errpts
+logical :: first,DIPDIPFLAG,OOFLAG,OHFLAG,HHFLAG,COSFLAG,GKFLAG,GK2FLAG,ALLFLAG, ACFFLAG, RDF2DFLAG
  character(20), parameter  :: constants = "RDF_master.inp"
 !Variables for reading XTC
  character(len=3) :: filetype    
@@ -65,8 +64,10 @@ read(Lun3,*) OHFLAG
 read(Lun3,*) HHFLAG
 read(Lun3,*) PBC
 read(Lun3,*) Na
-read(Lun1,*) ACFFLAG
+read(Lun3,*) ACFFLAG
+read(Lun3,*) RDF2DFLAG
 Close(Lun3)
+
 !----------------------- Debug ---------------------------------------
 if ( (GK2FLAG) .and. (.not.DIPDIPFLAG) ) then
 	write(*,*) " G_K from dip-dip was selected but dip-dip was not enabled. exiting.."
@@ -111,64 +112,71 @@ else if (model == 'ttm3') then
 else 
 	write(*,*) "Model is generic 3 site"
 endif 
-if (filetype .eq. "xyz" ) then   
+
 
 
 !----------------------------------------------------------------------------
 !-------------- read number of atoms and count number of timesteps ---
 !----------------------------------------------------------------------------
-open(Lun1,file=fileinp,status="old",action="read",iostat=ierror)
-if (TTM3F) Open(LunTTM3F,file=TTM3F_dip_input,status="unknown",action="read",iostat=ierror)
-
-if (ALLFLAG) then
-	first = .true.
-	nsteps = 0
-	npts = 0
-	Do
-   		If (first) then       
-   			read(Lun1,*,iostat=ierror) Na
-      			first = .false.
-       	        Else
-       	 		Read(Lun1,*,iostat=ierror) 
-   		End If  
-   		if (ierror /= 0) then
-   	    		exit
-   		End if
+if (filetype .eq. "xyz" ) then   
+	open(Lun1,file=fileinp,status="old",action="read",iostat=ierror)
+	if (TTM3F) Open(LunTTM3F,file=TTM3F_dip_input,status="unknown",action="read",iostat=ierror)
+	if (ALLFLAG) then
+		first = .true.
+		nsteps = 0
+		npts = 0
+		do
+  	 		if (first) then       
+  	 			read(Lun1,*,iostat=ierror) Na
+   	   			first = .false.
+   	    	        else
+   	    	 		Read(Lun1,*,iostat=ierror) 
+   			endif  
+   			if (ierror /= 0) then
+   	    			exit
+   			endif
   		npts = npts + 1 !Count number of lines
-	End Do
+		enddo
 	nsteps = floor(real(npts) / real((Na + 2)))! Number of timesteps
-endif
-if (.not. ALLFLAG) then
-   	read(Lun1,*,iostat=ierror) Na
-endif
-rewind(Lun1)
+	endif
+	if (.not. ALLFLAG) then
+	   	read(Lun1,*,iostat=ierror) Na
+	endif
 
-first = .true.
+	Nmol = Na / 3
+endif
 
-Nmol = Na / 3
+if (filetype .eq. "xtc" ) then   
+        write(*,*) "Reading XTC. If this is a  4 site model we assume all 4 sites are in the XTC."
+        write(*,*) "we assume the units are nm in the .xtc. They will be converted to Ang"
+	if (ALLFLAG .and. GKFLAG) then 
+		stop 
+		write(*,*) "WARNING: program cannot count the number of steps with .xtc." 
+		write(*,*) "To ensure gk(R) error calculation works, please set 'read all' to false" 
+		write(*,*) "and make sure you set the number of steps correctly"
+	endif
+
+	if (.not. ALLFLAG) then 
+		CALL XTCOPEN(ID1,fileinp,"R",MAXAT)
+     		if (TIP4P) then
+			Nmol = Na/4
+    		else
+	 		Nmol = Na/3
+   		endif
+		NAT = Na
+	endif
+endif
 	
 write(*,*) "number of steps: ", nsteps
 write(*,*) "numer of errpts: ", errpts
+write(*,*) "numer of molecules: ", Nmol
 write(*,*) "numer of atoms: ", Na
-endif 
 
-
-if (filetype .eq. "xtc") then 
-      CALL XTCOPEN(ID1,fileinp,"R",MAXAT)
-     if (TIP4P) then
-		Nmol = Na/4
-     else
-	 	Nmol = Na/3
-     endif
-     write(*,*) "Reading XTC. If this is a  4 site model we assume all 4 sites are in the XTC."
-     write(*,*) "             we assume the units are nm in the .xtc. They will be converted to Ang"
-     NAT = Na
-endif 
 
 Nmol_HH = Nmol * 2
 errpts = floor((errpercent/100)*nsteps)
-halflength = maxval(length) / 2.0d0
-delta = sqrt(3d0) * halflength / real(Ndiv)
+halflength = length / 2.0d0
+delta = sqrt(halflength(1)**2 + halflength(2)**2 + halflength(3)**2 ) / real(Ndiv)
 
 !----------------------------------------------------------------------------
 !---------------------------- allocate all the arrays! --------------------- 
@@ -210,6 +218,7 @@ histOOdip = 0
 TTM3Fdips = 0
 coshist = 0 
 if (ACFFLAG) call init_ACF
+if (RDF2DFLAG) call  allocate_2DRDF
 
 !----------------------------------------------------------------------------
 !---------------------------------- main loop ------------------------------ 
@@ -237,6 +246,7 @@ Do istep = 1,nsteps
 
 	if (RET.EQ.0) then 
 		write(*,*) "End of file at frame no. ", istep, " = ", nsteps
+		nsteps = istep
 		goto 1000
 	endif 
         if ( .not. (NAT .eq. Na)) then
@@ -244,7 +254,7 @@ Do istep = 1,nsteps
 	    write(*,*)  NAT, " neq " , Na
             stop
         endif
-	if (istep .eq. 1) write(*,*) "Box size from file is", BOX(1),BOX(5),BOX(9)
+	if (istep .eq. 1) write(*,*) "Box size from file is", BOX(1),BOX(5),BOX(9), " (nm)"
     
 
 	!move coords from the X(:) array to the Oxy & Hydro arrays
@@ -260,9 +270,9 @@ Do istep = 1,nsteps
 	else
 	!three site model case
 		do ia = 1, Nmol
-			Hydro(:,2*ia-0) = X(indx+0:indx+2)   
-			Hydro(:,2*ia-1) = X(indx+3:indx+5)   
-			Oxy(:,ia)       = X(indx+6:indx+8)  
+			Oxy(:,ia)       = X(indx+0:indx+2)   
+			Hydro(:,2*ia-0) = X(indx+3:indx+5)   
+			Hydro(:,2*ia-1) = X(indx+6:indx+8)  
 			indx = ia*9  	
 		enddo
 	endif
@@ -284,6 +294,7 @@ Do istep = 1,nsteps
 		endif
 	endif 
 	if (ACFFLAG) call make_ACF(Oxy, Hydro, TTM3Fdips)
+ 	if (RDF2DFLAG) call m_2DRDF(Oxy, Hydro, TTM3Fdips)
    write(6,*) istep, nsteps
 enddo! istep = 1,nsteps-1
 
@@ -313,7 +324,7 @@ if (DIPDIPFLAG) then
 endif
 ! gkr stuff
 if (GKFLAG ) then
-        do i = 1, Ndiv
+      do i = 1, Ndiv
  	totgka = 0 
  	totgke = 0
 		do j = 1,i 
@@ -331,6 +342,7 @@ if (GKFLAG ) then
 endif
 
 if (ACFFLAG) call averaging_ACF
+if (RDF2DFLAG) call normalize_2DRDF
 
 close(Lun1) 
 
@@ -357,6 +369,7 @@ endif
 
 !--------------------------  Write out all the things! -------------------------
 if (ACFFLAG) call write_ACF
+if (RDF2DFLAG) call  write_2DRDF
 if (DIPDIPFLAG) Open(17,file=trim(fileheader)//"dip.dat",status="unknown")
 if (COSFLAG)    Open(43,file=trim(fileheader)//"cos.dat",status="unknown")
 if (GKFLAG)     Open(16,file=trim(fileheader)//"gKr.dat",status="unknown") 
@@ -365,21 +378,21 @@ if (OOFLAG)     Open(13,file=trim(fileheader)//"_OO.dat",status="unknown")
 if (HHFLAG)     Open(14,file=trim(fileheader)//"_HH.dat",status="unknown")
 if (OHFLAG)     Open(15,file=trim(fileheader)//"_OH.dat",status="unknown")
 
-Do i = 1, Ndiv
+do i = 1, Ndiv
    if (DIPDIPFLAG)  then	
 	if (POSNEG) then
 	  write(17,110) real(i-1)*delta+delta/2, histOOdip(i), histOOdipPOS(i), -histOOdipNEG(i) 
 	else 
 	  write(17,100) real(i-1)*delta+delta/2, histOOdip(i)
 	endif 
-    endif
+   endif
 	if (COSFLAG) write(43,*) real(i-1)*delta+delta/2, coshistn(i)
 	if (GKFLAG)  write(16,120) real(i-1)*delta+delta/2, gKr(i), gKrerr(i), gka(i), gke(i) 
 	if (GK2FLAG) write(18,100) real(i-1)*delta+delta/2, gKr2(i) 
 	if (OOFLAG)  write(13,*) real(i-1)*delta+delta/2, histOO(i)/real(nsteps)
 	if (HHFLAG)  write(14,*) real(i-1)*delta+delta/2, histHH(i)/real(nsteps)
 	if (OHFLAG)  write(15,*) real(i-1)*delta+delta/2, histOH(i)/real(nsteps)
-End Do
+enddo
 
 100 Format (f12.6,f16.13) 
 110 Format (f12.6,3(1x,f16.13))
