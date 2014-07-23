@@ -87,12 +87,11 @@ contains
  	  
     	  zhat = d1/sqrt(dot_product(d1,d1))
 	
- 	  x = R - dot_product(R,zhat)*zhat
+ 	  x = r - dot_product(r,zhat)*zhat
 	    
 	  z = r - x 
 		 	  
-            
-	  distance = sqrt(dot_product(r,r))
+          distance = sqrt(dot_product(r,r))
           rhat = r/distance
 
 	  xd = sqrt( sum(x**2) )  
