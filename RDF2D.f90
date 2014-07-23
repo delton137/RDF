@@ -33,12 +33,7 @@ contains
     real,dimension(3,Nmol*2),intent(in) :: Hydro
     real :: rho, vol, distance, tmp, xd, zd
     integer :: ia, ja, ix, i, countx, countz 
-    real, dimension(3) :: v1, v2, v3, d1, d2, r, x, z, summ, h, k, rhat
-    real, dimension(3,2) :: A
-    real, dimension(2,3) :: At
-    real, dimension(2,2) :: C
-    real, dimension(3,2) :: C1
-    real, dimension(3,3) :: C2
+    real, dimension(3) :: v1, v2, v3, d1, d2, r, x, z, summ, rhat,  zhat
     real :: dip_fac, D_fac, cos_fac
 
     ia = 0
@@ -86,26 +81,18 @@ contains
 	  endif 
 
 	  !Find the 'x' and 'z' components (in the frame of the molecule!) 
-	  !construct two vectors perpendicular to d1 and perpendicular to each other
-          ![these vectors form a basis in the plane perpendicular to the
-	  !dipole moment of the molecule]
-	  h(1) = d1(2)
-	  h(2) = -d1(1)
-	  h(3) = 0 
-	  k(1) = d1(1)
-	  k(2) = d1(2) 
-	  k(3) = -(  d1(1)**2 + d1(2)**2   )/d1(3) 
-
-	  !Calculate projection of the distance vector r
-	  !onto the perpendicular plane
 
 	  r = Oxy(:,ja) - Oxy(:,ia) !order here is important
 	  if (PBC) r = r - length*anint(r/length)!PBC
- 
-  	  z = r - x 
+ 	  
+    	  zhat = d1/sqrt(dot_product(d1,d1))
+	
+ 	  x = R - dot_product(R,zhat)*zhat
+	    
+	  z = r - x 
 		 	  
             
-	  distance = sqrt( sum(r**2) )
+	  distance = sqrt(dot_product(r,r))
           rhat = r/distance
 
 	  xd = sqrt( sum(x**2) )  
